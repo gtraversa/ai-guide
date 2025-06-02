@@ -1,10 +1,11 @@
 import os
 from audio_io.mic_listener import record_audio
-from stt.stt import transcribe_audio, get_latest_audio_file
+from stt.stt import transcribe_audio, get_latest_audio_file, whisper_transcribe
 from tts.tts import synthesize_text
 from dotenv import load_dotenv
 from Utils.file_utils import clear_recordings,make_rec_dir
 from Utils.model_utils import load_stt_model,load_tts_model
+from llm.llm_interact import send_llm
 
 
 load_dotenv()
@@ -12,9 +13,11 @@ load_dotenv()
 REC_DIRECTORY = make_rec_dir()
 STT_MODEL = load_stt_model()
 TTS_MODEL = load_tts_model()
+prev_q_id = None
 
 def main():
     try:
+        prev_q_id = None
         user_input = input("Press Enter to record or type 'q' to quit: ").strip().lower()
         while True:
             if user_input == 'q':
@@ -22,9 +25,13 @@ def main():
             record_audio(REC_DIRECTORY)
             audio_file = get_latest_audio_file(REC_DIRECTORY)
             if audio_file:
-                text = transcribe_audio(audio_file, STT_MODEL)
+                #text = transcribe_audio(audio_file, STT_MODEL)
+                text = whisper_transcribe(audio_file)
                 print(f"Transcription: {text}")
-                synthesize_text(text,TTS_MODEL)
+                (response,prev_q_id) = send_llm(text, prev_q_id)
+                print(f'Response: {response}')
+                print(f'Prev q Id: {prev_q_id}')
+                # synthesize_text(response,TTS_MODEL)
 
             else:
                 print("No audio recorded.")

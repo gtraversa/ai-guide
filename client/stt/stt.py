@@ -1,4 +1,5 @@
 from vosk import KaldiRecognizer
+from openai import OpenAI
 import os
 import wave
 import json
@@ -38,6 +39,15 @@ def transcribe_audio(file_path, model):
     wf.close()
     return text_result.strip()
 
+def whisper_transcribe(file_path):
+    client = OpenAI()
+    audio_file= open(file_path, "rb")
+    transcription = client.audio.transcriptions.create(
+        model="whisper-1", 
+        file=audio_file
+    )
+    
+    return transcription.text
 
 if __name__ == "__main__":
     audio_file = get_latest_audio_file()
