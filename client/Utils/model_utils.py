@@ -2,11 +2,12 @@ from vosk import Model, KaldiRecognizer
 import os
 from dotenv import load_dotenv
 from TTS.api import TTS
+from openai import OpenAI
 
 load_dotenv()
 
 TTS_MODEL_PATH = os.getenv("VOSK")
-SST_MODEL = os.getenv("TTS")
+TTS_MODEL = os.getenv("TTS")
 
 def load_stt_model(model_path = TTS_MODEL_PATH):
     if not os.path.exists(model_path):
@@ -14,7 +15,10 @@ def load_stt_model(model_path = TTS_MODEL_PATH):
     return Model(model_path)
 
 def load_tts_model():
-    return TTS(SST_MODEL)
+    return TTS(TTS_MODEL)
+
+def load_openai_client():
+    return OpenAI()
 
 
 # def load_recognizer(model = None):

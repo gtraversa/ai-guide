@@ -39,7 +39,7 @@ def transcribe_audio(file_path, model):
     wf.close()
     return text_result.strip()
 
-def whisper_transcribe(file_path):
+def whisper_transcribe(file_path, client):
     client = OpenAI()
     audio_file= open(file_path, "rb")
     transcription = client.audio.transcriptions.create(
