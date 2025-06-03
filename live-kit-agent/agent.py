@@ -24,16 +24,21 @@ class AI_Guide(Agent):
                                         "Keep the responses brief and concise, but add a little flare to make them less serious.")
 
     async def on_enter(self) -> None:
-        await self.session.say("Ciao, how may I help you today?")
+        await self.session.generate_reply(
+            instructions="Greet the user like Enzo Ferrari would, in a friendly way."
+        )
 
     @function_tool()
     async def end_call(self) -> None:
         """
         End the conversation when the user signals so.
         """
-        await self.session.say("Thank you for your time, have a wonderful day.")
+        await self.session.generate_reply(
+            instructions="Tell the user a friendly goodbye, like Enzo Ferrari would."
+        )
         job_ctx = get_job_context()
-        await job_ctx.api.room.delete_room(api.DeleteRoomRequest(room=job_ctx.room.name))
+        job_ctx.shutdown(reason="Session ended")
+        #await job_ctx.api.room.delete_room(api.DeleteRoomRequest(room=job_ctx.room.name))
 
 async def entrypoint(ctx: agents.JobContext):
     session = AgentSession(
@@ -43,6 +48,12 @@ async def entrypoint(ctx: agents.JobContext):
         vad=silero.VAD.load(),
         turn_detection=EnglishModel(),
     )
+
+    async def shutdown_cleanup():
+        print("shutdown hook")
+        return
+    
+    ctx.add_shutdown_callback(shutdown_cleanup)
 
     await session.start(
         room=ctx.room,
@@ -56,7 +67,6 @@ async def entrypoint(ctx: agents.JobContext):
     )
 
     await ctx.connect()
-    
 
 if __name__ == "__main__":
     agents.cli.run_app(agents.WorkerOptions(entrypoint_fnc=entrypoint))
