@@ -19,7 +19,7 @@ def synthesize_text_openai(client, text: str, output_path: str = Path(__file__).
 
     with client.audio.speech.with_streaming_response.create(
     model="gpt-4o-mini-tts",
-    voice="coral",
+    voice="ash",
     input=text,
     instructions="Speak in a cheerful and positive tone.",
 ) as response: 

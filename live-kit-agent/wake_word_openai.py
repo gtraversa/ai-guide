@@ -1,9 +1,8 @@
 import logging
 import re
-import os
-import sys
 from dotenv import load_dotenv
 from typing import AsyncIterable, Optional, List, Dict
+import asyncio
 
 from livekit import rtc,api,agents
 from livekit.agents import AgentSession, Agent, RoomInputOptions, function_tool, get_job_context,cli, WorkerOptions
@@ -84,6 +83,12 @@ class AI_Guide(Agent):
             return result
         # Otherwise, don't generate a reply
         raise StopResponse()
+    
+    async def user_timeout(self):
+        if self.wake_word_detected:
+            self.wake_word_detected = False
+        logger.info("User timed out, chat reset")
+        await self.update_chat_ctx(ChatContext())
 
     @function_tool()
     async def end_conversation(self) -> None:
@@ -98,6 +103,7 @@ class AI_Guide(Agent):
         await self.update_chat_ctx(ChatContext())
 
 async def entrypoint(ctx: agents.JobContext):
+    agent = AI_Guide()
     session = AgentSession(
         stt=openai.STT(model = 'whisper-1'),
         llm=openai.LLM(model="gpt-4.1-mini"),
@@ -108,17 +114,23 @@ async def entrypoint(ctx: agents.JobContext):
             ),
         vad=silero.VAD.load(),
         turn_detection=EnglishModel(),
+        user_away_timeout=15,
     )
 
     await session.start(
         room=ctx.room,
-        agent=AI_Guide(),
+        agent=agent,
         room_input_options=RoomInputOptions(
             noise_cancellation=noise_cancellation.BVC(),
         ),
     )
 
     await ctx.connect()
+
+    @session.on("user_state_changed")
+    def on_user_state_changed(event):
+        asyncio.create_task(agent.user_timeout())
+
 
 if __name__ == "__main__":
     cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
