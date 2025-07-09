@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 
 from livekit import agents
-from livekit.agents import AgentSession, Agent, RoomInputOptions,function_tool
+from livekit.agents import AgentSession, Agent, RoomInputOptions, RoomOutputOptions,function_tool
 from livekit.plugins import (
     openai,
     noise_cancellation,
@@ -74,6 +74,7 @@ async def entrypoint(ctx: agents.JobContext):
     )
     session = AgentSession(
         llm=realtime_llm,
+        user_away_timeout=10
     )
 
     await session.start(
@@ -83,8 +84,7 @@ async def entrypoint(ctx: agents.JobContext):
             # LiveKit Cloud enhanced noise cancellation
             # - If self-hosting, omit this parameter
             # - For telephony applications, use `BVCTelephony` for best results
-            noise_cancellation=noise_cancellation.BVC(),
-            audio_enabled=False
+            noise_cancellation=noise_cancellation.BVC()
         ),
     )
 
@@ -94,7 +94,7 @@ async def entrypoint(ctx: agents.JobContext):
     def on_user_state_changed(event):
         if event.new_state == "away":
             print(event)
-            asyncio.create_task(agent.user_timeout())
+            # asyncio.create_task(agent.user_timeout())
             print(f"\nAgent Session ended for inactivity")
             print("=" * 20)
             print("Chat History:")
@@ -105,6 +105,7 @@ async def entrypoint(ctx: agents.JobContext):
                         text += " (interrupted)"
                     print(text)
             print("=" * 20)
+            ctx.room.disconnect()
 
 
 if __name__ == "__main__":
