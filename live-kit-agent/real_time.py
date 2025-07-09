@@ -5,6 +5,7 @@ from livekit.agents import AgentSession, Agent, RoomInputOptions,function_tool
 from livekit.plugins import (
     openai,
     noise_cancellation,
+    silero,
 )
 from livekit.agents.llm import ChatContext
 import asyncio
@@ -44,19 +45,24 @@ class AI_Guide(Agent):
         )
         await self.update_chat_ctx(ChatContext())
 
+    async def user_timeout(self):
+        await self.update_chat_ctx(ChatContext())
+
 
 async def entrypoint(ctx: agents.JobContext):
     setup_gpio()
     agent = AI_Guide()
-  
+
     realtime_llm = openai.realtime.RealtimeModel(
         voice="ash",
-        input_audio_transcription={
-            "language": "en"
-        }
+        # input_audio_transcription={
+        #     "language": "en"
+        # }
     )
     session = AgentSession(
-        llm=realtime_llm
+        llm=realtime_llm,
+        vad = silero.VAD.load(),
+        allow_interruptions=False
     )
 
     await session.start(
@@ -75,7 +81,7 @@ async def entrypoint(ctx: agents.JobContext):
 
     @session.on("user_state_changed")
     def on_user_state_changed(event):
-        if event.new_state == "away" and agent.wake_word_detected:
+        if event.new_state == "away":
             print(event)
             asyncio.create_task(agent.user_timeout())
             print(f"\nAgent Session ended for inactivity")
