@@ -51,10 +51,12 @@ async def entrypoint(ctx: agents.JobContext):
   
     realtime_llm = openai.realtime.RealtimeModel(
         voice="ash",
+        input_audio_transcription={
+            "language": "en"
+        }
     )
     session = AgentSession(
-        llm=realtime_llm,
-        allow_interruptions=False
+        llm=realtime_llm
     )
 
     await session.start(
