@@ -7,6 +7,7 @@ from livekit.plugins import (
     noise_cancellation,
     silero,
 )
+import sys
 
 from openai.types.beta.realtime.session import TurnDetection
 from livekit.agents.llm import ChatContext
@@ -45,6 +46,8 @@ class AI_Guide(Agent):
         await self.session.generate_reply(
             instructions="Tell the user a friendly goodbye, like Enzo Ferrari would. Keep it short"
         )
+        cleanup_gpio()
+        sys.exit()
         await self.update_chat_ctx(ChatContext())
 
     async def user_timeout(self):
