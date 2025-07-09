@@ -74,7 +74,8 @@ async def entrypoint(ctx: agents.JobContext):
     )
     session = AgentSession(
         llm=realtime_llm,
-        user_away_timeout=10
+        user_away_timeout=10,
+        allow_interruptions=False
     )
 
     await session.start(
@@ -91,7 +92,7 @@ async def entrypoint(ctx: agents.JobContext):
     await ctx.connect()
 
     @session.on("user_state_changed")
-    def on_user_state_changed(event):
+    async def on_user_state_changed(event):
         if event.new_state == "away":
             print(event)
             # asyncio.create_task(agent.user_timeout())
@@ -105,7 +106,7 @@ async def entrypoint(ctx: agents.JobContext):
                         text += " (interrupted)"
                     print(text)
             print("=" * 20)
-            ctx.room.disconnect()
+            await ctx.room.disconnect()
 
 
 if __name__ == "__main__":
