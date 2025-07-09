@@ -7,6 +7,8 @@ from livekit.plugins import (
     noise_cancellation,
     silero,
 )
+
+from openai.types.beta.realtime.session import TurnDetection
 from livekit.agents.llm import ChatContext
 import asyncio
 
@@ -55,14 +57,20 @@ async def entrypoint(ctx: agents.JobContext):
 
     realtime_llm = openai.realtime.RealtimeModel(
         voice="ash",
+        turn_detection=TurnDetection(
+            type="server_vad",
+            threshold=0.5,
+            prefix_padding_ms=300,
+            silence_duration_ms=500,
+            create_response=True,
+            interrupt_response=False,
+        )
         # input_audio_transcription={
         #     "language": "en"
         # }
     )
     session = AgentSession(
         llm=realtime_llm,
-        vad = silero.VAD.load(),
-        allow_interruptions=False
     )
 
     await session.start(
