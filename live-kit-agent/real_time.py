@@ -16,11 +16,13 @@ BUTTON = 17
 def button_callback(channel):
     print("Button pressed!")
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+def setup_gpio():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.add_event_detect(BUTTON, GPIO.FALLING, callback=button_callback, bouncetime=200)
 
-# Set up event detection
-GPIO.add_event_detect(BUTTON, GPIO.FALLING, callback=button_callback, bouncetime=200)
+def cleanup_gpio():
+    GPIO.cleanup()
 
 load_dotenv()
 
@@ -44,7 +46,7 @@ class AI_Guide(Agent):
 
 
 async def entrypoint(ctx: agents.JobContext):
-
+    setup_gpio()
     agent = AI_Guide()
   
     realtime_llm = openai.realtime.RealtimeModel(
@@ -87,4 +89,7 @@ async def entrypoint(ctx: agents.JobContext):
 
 
 if __name__ == "__main__":
-    agents.cli.run_app(agents.WorkerOptions(entrypoint_fnc=entrypoint))
+    try:
+        agents.cli.run_app(agents.WorkerOptions(entrypoint_fnc=entrypoint))
+    finally:
+        cleanup_gpio()
