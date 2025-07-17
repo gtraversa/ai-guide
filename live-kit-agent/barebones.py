@@ -8,7 +8,7 @@ from livekit.plugins import (
     silero,
 )
 
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
+from livekit.plugins.turn_detector.english import EnglishModel
 
 
 
@@ -58,7 +58,7 @@ async def entrypoint(ctx: agents.JobContext):
             voice="ash"
             ),
         vad=silero.VAD.load(),
-        turn_detection=MultilingualModel(),
+        turn_detection=EnglishModel(),
         user_away_timeout=5
     )
 
