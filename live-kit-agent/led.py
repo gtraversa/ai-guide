@@ -1,7 +1,3 @@
-"""
-LED light pattern like Google Home
-"""
-
 import apa102
 import time
 import threading
@@ -15,11 +11,7 @@ class Pixels:
     PIXELS_N = 3
 
     def __init__(self):
-        self.basis = [0] * 3 * self.PIXELS_N
-        self.basis[0] = 2
-        self.basis[3] = 1
-        self.basis[4] = 1
-        self.basis[7] = 2
+        self.brightness_scale = 0.5  # 50% brightness
 
         self.colors = [0] * 3 * self.PIXELS_N
         self.dev = apa102.APA102(num_led=self.PIXELS_N)
@@ -33,7 +25,6 @@ class Pixels:
     def wakeup(self, direction=0):
         def f():
             self._wakeup(direction)
-
         self.next.set()
         self.queue.put(f)
 
@@ -60,62 +51,49 @@ class Pixels:
 
     def _wakeup(self, direction=0):
         for i in range(1, 25):
-            colors = [i * v for v in self.basis]
+            red = int(255 * i / 24 * self.brightness_scale)
+            colors = [red, 0, 0] * self.PIXELS_N
             self.write(colors)
             time.sleep(0.01)
-
         self.colors = colors
 
     def _listen(self):
-        for i in range(1, 25):
-            colors = [i * v for v in self.basis]
-            self.write(colors)
-            time.sleep(0.01)
-
+        green = int(255 * self.brightness_scale)
+        colors = [0, green, 0] * self.PIXELS_N
+        self.write(colors)
         self.colors = colors
 
     def _think(self):
-        colors = self.colors
-
         self.next.clear()
         while not self.next.is_set():
-            colors = colors[3:] + colors[:3]
-            self.write(colors)
-            time.sleep(0.2)
-
-        t = 0.1
-        for i in range(0, 5):
-            colors = colors[3:] + colors[:3]
-            self.write([(v * (4 - i) / 4) for v in colors])
-            time.sleep(t)
-            t /= 2
-
-        # time.sleep(0.5)
-
+            for i in range(0, 25):
+                green = int(255 * i / 24 * self.brightness_scale)
+                colors = [0, green, 0] * self.PIXELS_N
+                self.write(colors)
+                time.sleep(0.01)
+            for i in range(24, -1, -1):
+                green = int(255 * i / 24 * self.brightness_scale)
+                colors = [0, green, 0] * self.PIXELS_N
+                self.write(colors)
+                time.sleep(0.01)
         self.colors = colors
 
     def _speak(self):
-        colors = self.colors
-        gradient = -1
-        position = 24
-
         self.next.clear()
         while not self.next.is_set():
-            position += gradient
-            self.write([(v * position / 24) for v in colors])
-
-            if position == 24 or position == 4:
-                gradient = -gradient
-                time.sleep(0.2)
-            else:
+            for i in range(0, 25):
+                red = int(255 * i / 24 * self.brightness_scale)
+                blue = int(180 * i / 24 * self.brightness_scale)
+                colors = [red, 0, blue] * self.PIXELS_N
+                self.write(colors)
                 time.sleep(0.01)
-
-        while position > 0:
-            position -= 1
-            self.write([(v * position / 24) for v in colors])
-            time.sleep(0.01)
-
-        # self._off()
+            for i in range(24, -1, -1):
+                red = int(255 * i / 24 * self.brightness_scale)
+                blue = int(180 * i / 24 * self.brightness_scale)
+                colors = [red, 0, blue] * self.PIXELS_N
+                self.write(colors)
+                time.sleep(0.01)
+        self.colors = colors
 
     def _off(self):
         self.write([0] * 3 * self.PIXELS_N)
@@ -123,5 +101,4 @@ class Pixels:
     def write(self, colors):
         for i in range(self.PIXELS_N):
             self.dev.set_pixel(i, int(colors[3*i]), int(colors[3*i + 1]), int(colors[3*i + 2]))
-
         self.dev.show()
