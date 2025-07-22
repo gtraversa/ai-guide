@@ -59,6 +59,7 @@ class AI_Guide(Agent):
         if self.activated:  
             # Let the default behavior happen  
             result = await super().on_user_turn_completed(chat_ctx, new_message)
+            led.think()
             return result
         # Otherwise, don't generate a reply
         raise StopResponse()
@@ -84,7 +85,7 @@ class AI_Guide(Agent):
         if self.activated:
             led.listen()
         else:
-            led.off()
+            led.wakeup()
         logger.info(f'Toggeled activation state, new state is: {str(self.activated)}')
         
 
@@ -128,8 +129,6 @@ async def entrypoint(ctx: agents.JobContext):
         logger.info(f'Agent state event:{event}')
         if event.new_state == 'listening' and agent.activated:
             led.listen()
-        elif event.new_state == 'thinking':
-            led.listen()
         elif event.new_state == 'speaking':
             led.speak()
 
@@ -140,5 +139,8 @@ async def entrypoint(ctx: agents.JobContext):
             asyncio.create_task(agent.user_timeout())
 
 
-if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+try:
+    if __name__ == "__main__":
+        cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+except KeyboardInterrupt:
+    GPIO.cleanup()
