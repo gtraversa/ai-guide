@@ -4,7 +4,7 @@ from typing import AsyncIterable, Optional
 import asyncio
 
 from livekit import rtc,agents
-from livekit.agents import AgentSession, Agent, RoomInputOptions, function_tool, get_job_context,cli, WorkerOptions
+from livekit.agents import AgentSession, Agent, RoomInputOptions, function_tool,cli, WorkerOptions
 from livekit.plugins import (
     openai,
     noise_cancellation,
@@ -12,7 +12,7 @@ from livekit.plugins import (
 )
 from livekit.agents.voice.agent_activity import StopResponse
 from livekit.agents.llm import ChatContext
-from livekit.plugins.turn_detector.english import EnglishModel
+from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 import RPi.GPIO as GPIO 
 
@@ -117,7 +117,7 @@ async def entrypoint(ctx: agents.JobContext):
             instructions="Speak in a friendly and conversational tone.",
             ),
         vad=silero.VAD.load(),
-        turn_detection=EnglishModel(),
+        turn_detection=MultilingualModel(),
         user_away_timeout=15,
         allow_interruptions=False
     )
@@ -151,7 +151,7 @@ async def entrypoint(ctx: agents.JobContext):
     def on_close(event):
         led.off()
         GPIO.cleanup()
-
+    
 
 if __name__ == "__main__":
     cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
