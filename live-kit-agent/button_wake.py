@@ -14,12 +14,17 @@ from livekit.agents.voice.agent_activity import StopResponse
 from livekit.agents.llm import ChatContext
 from livekit.plugins.turn_detector.english import EnglishModel
 
+import RPi.GPIO as GPIO 
+import time
+
+BUTTON = 17
+
+
 load_dotenv()
 
 logger = logging.getLogger("listen-and-respond")
 logger.setLevel(logging.INFO)
 
-WAKE_WORD = "hey enzo"
 
 class AI_Guide(Agent):
     def __init__(self) -> None:
@@ -70,8 +75,20 @@ class AI_Guide(Agent):
         logger.info("Response completed, waiting button")
         await self.update_chat_ctx(ChatContext())
 
+    def button_callback(channel):
+        print("Button pressed")
+
+    def setup_gpio():
+        GPIO.setmode(GPIO.BCM)
+        GPIO.set(BUTTON,GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(BUTTON,GPIO.FALLING,callback= self.button_callback,bouncetime=200)
+
+
+
 async def entrypoint(ctx: agents.JobContext):
     agent = AI_Guide()
+    agent.setup_gpio()
+
     session = AgentSession(
         stt=openai.STT(model = 'whisper-1'),
         llm=openai.LLM(model="gpt-4.1-mini"),
