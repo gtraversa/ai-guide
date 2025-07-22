@@ -15,7 +15,10 @@ from livekit.agents.llm import ChatContext
 from livekit.plugins.turn_detector.english import EnglishModel
 
 import RPi.GPIO as GPIO 
-import time
+
+from led import Pixels
+
+led = Pixels()
 
 BUTTON = 17
 
@@ -30,12 +33,15 @@ class AI_Guide(Agent):
     def __init__(self) -> None:
         super().__init__(instructions="You are a statue of Enzo Ferrari in a museum. Guests will be asking you questions regarding yourself," \
                                         " your life, the history of Ferrari. Guests will also be asking you general questions unrelated to yourself." \
-                                        "Keep the responses brief and concise, but add a little flare to make them less serious.")
+                                        "Keep the responses brief and concise, but add a little flare to make them less serious."\
+                                        "You should not refer to yourself as a statue most of the time, but as actually being Enzo Ferrari")
         self.activated = True
 
     async def on_enter(self):
         # Inform the user that the agent is waiting for the wake word
         logger.info(f"Waiting for button press")
+        self.activated = False
+        led.wakeup()
 
     def stt_node(self, audio: AsyncIterable[str], model_settings: Optional[dict] = None) -> Optional[AsyncIterable[rtc.AudioFrame]]:
         parent_stream = super().stt_node(audio, model_settings)
@@ -58,8 +64,6 @@ class AI_Guide(Agent):
         raise StopResponse()
     
     async def user_timeout(self):
-        if self.activated:
-            self.activated = False
         logger.info("User timed out, chat reset")
         await self.update_chat_ctx(ChatContext())
 
@@ -75,12 +79,16 @@ class AI_Guide(Agent):
         logger.info("Response completed, waiting button")
         await self.update_chat_ctx(ChatContext())
 
-    def button_callback(channel):
-        print("Button pressed")
+    def button_callback(self,channel):
+        self.activated = not self.activated
+        if self.activated:
+            led.listen()
+        logger.info(f'Toggeled activation state, new state is: {str(self.activated)}')
+        
 
-    def setup_gpio():
+    def setup_gpio(self):
         GPIO.setmode(GPIO.BCM)
-        GPIO.set(BUTTON,GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(BUTTON,GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(BUTTON,GPIO.FALLING,callback= self.button_callback,bouncetime=200)
 
 
@@ -100,6 +108,7 @@ async def entrypoint(ctx: agents.JobContext):
         vad=silero.VAD.load(),
         turn_detection=EnglishModel(),
         user_away_timeout=15,
+        allow_interruptions=False
     )
 
     await session.start(
@@ -112,9 +121,20 @@ async def entrypoint(ctx: agents.JobContext):
 
     await ctx.connect()
 
-    # @session.on("user_state_changed")
-    # def on_user_state_changed(event):
-    #     asyncio.create_task(agent.user_timeout())
+    @session.on("user_input_transcribed")
+    def user_input_transcribed(event):
+        if agent.activated:
+            logger.info("Thinking")
+            led.think()
+    
+    @session.on("agent_state_changed")
+    def agent_state_changed(event):
+        logger.info(f'Agent state event:{event}')
+
+    @session.on("user_state_changed")
+    def on_user_state_changed(event):
+        if event.new_state == "away" and agent.activated:
+            asyncio.create_task(agent.user_timeout())
 
 
 if __name__ == "__main__":
