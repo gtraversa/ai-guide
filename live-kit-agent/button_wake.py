@@ -1,9 +1,9 @@
 import logging
 from dotenv import load_dotenv
-from typing import AsyncIterable, Optional, List, Dict
+from typing import AsyncIterable, Optional
 import asyncio
 
-from livekit import rtc,api,agents
+from livekit import rtc,agents
 from livekit.agents import AgentSession, Agent, RoomInputOptions, function_tool, get_job_context,cli, WorkerOptions
 from livekit.plugins import (
     openai,
@@ -78,6 +78,7 @@ class AI_Guide(Agent):
             instructions="Tell the user a friendly goodbye, like Enzo Ferrari would. Keep it short"
         )
         self.activated = False
+        led.wakeup()
         logger.info("Response completed, waiting button")
         await self.update_chat_ctx(ChatContext())
 
@@ -115,7 +116,7 @@ async def entrypoint(ctx: agents.JobContext):
             voice="ash",
             instructions="Speak in a friendly and conversational tone.",
             ),
-        # vad=silero.VAD.load(),
+        vad=silero.VAD.load(),
         turn_detection=EnglishModel(),
         user_away_timeout=15,
         allow_interruptions=False
@@ -144,11 +145,13 @@ async def entrypoint(ctx: agents.JobContext):
     def on_user_state_changed(event):
         if event.new_state == "away" and agent.activated:
             asyncio.create_task(agent.user_timeout())
+    
+
+    @session.on('close')
+    def on_close(event):
+        led.off()
+        GPIO.cleanup()
 
 
-try:
-    if __name__ == "__main__":
-        cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
-except KeyboardInterrupt:
-    led.off()
-    GPIO.cleanup()
+if __name__ == "__main__":
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
