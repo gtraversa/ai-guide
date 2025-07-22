@@ -66,6 +66,7 @@ class AI_Guide(Agent):
     
     async def user_timeout(self):
         logger.info("User timed out, chat reset")
+        led.wakeup()
         await self.update_chat_ctx(ChatContext())
 
     @function_tool()
@@ -83,6 +84,12 @@ class AI_Guide(Agent):
     def button_callback(self,channel):
         self.activated = not self.activated
         if self.activated:
+            async def introduce():
+                await self.session.generate_reply(
+                    instructions="Greet the user quickly",
+                    allow_interruptions=False
+                )
+            introduce()
             led.listen()
         else:
             led.wakeup()
@@ -101,15 +108,15 @@ async def entrypoint(ctx: agents.JobContext):
     agent.setup_gpio()
 
     session = AgentSession(
-        stt=openai.STT(model = 'whisper-1'),
-        llm=openai.LLM(model="gpt-4.1-mini"),
+        stt=openai.STT(model = "gpt-4o-mini-transcribe"),
+        llm=openai.LLM(model="gpt-4o"),
         tts=openai.TTS(
             model = 'tts-1',
             voice="ash",
             instructions="Speak in a friendly and conversational tone.",
             ),
         vad=silero.VAD.load(),
-        turn_detection=EnglishModel(),
+        # turn_detection=EnglishModel(),
         user_away_timeout=15,
         allow_interruptions=False
     )
@@ -143,4 +150,5 @@ try:
     if __name__ == "__main__":
         cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
 except KeyboardInterrupt:
+    led.off()
     GPIO.cleanup()
