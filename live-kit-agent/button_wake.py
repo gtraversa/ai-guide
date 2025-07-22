@@ -115,8 +115,8 @@ async def entrypoint(ctx: agents.JobContext):
             voice="ash",
             instructions="Speak in a friendly and conversational tone.",
             ),
-        vad=silero.VAD.load(),
-        # turn_detection=EnglishModel(),
+        # vad=silero.VAD.load(),
+        turn_detection=EnglishModel(),
         user_away_timeout=15,
         allow_interruptions=False
     )
