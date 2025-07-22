@@ -83,6 +83,8 @@ class AI_Guide(Agent):
         self.activated = not self.activated
         if self.activated:
             led.listen()
+        else:
+            led.off()
         logger.info(f'Toggeled activation state, new state is: {str(self.activated)}')
         
 

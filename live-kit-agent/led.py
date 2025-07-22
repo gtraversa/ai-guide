@@ -11,7 +11,7 @@ class Pixels:
     PIXELS_N = 3
 
     def __init__(self):
-        self.brightness_scale = 0.5  # 50% brightness
+        self.brightness_scale = 0.25  # 50% brightness
 
         self.colors = [0] * 3 * self.PIXELS_N
         self.dev = apa102.APA102(num_led=self.PIXELS_N)
