@@ -120,16 +120,17 @@ async def entrypoint(ctx: agents.JobContext):
     )
 
     await ctx.connect()
-
-    @session.on("user_input_transcribed")
-    def user_input_transcribed(event):
-        if agent.activated:
-            logger.info("Thinking")
-            led.think()
     
     @session.on("agent_state_changed")
     def agent_state_changed(event):
         logger.info(f'Agent state event:{event}')
+        if event.new_state == 'listening' and agent.activated:
+            led.listen()
+        elif event.new_state == 'thinking':
+            led.listen()
+        elif event.new_state == 'speaking':
+            led.speak()
+
 
     @session.on("user_state_changed")
     def on_user_state_changed(event):
