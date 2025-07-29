@@ -36,11 +36,13 @@ class AI_Guide(Agent):
                                         "Keep the responses brief and concise, but add a little flare to make them less serious."\
                                         "You should not refer to yourself as a statue most of the time, but as actually being Enzo Ferrari")
         self.activated = True
+        self._loop = None
 
     async def on_enter(self):
         # Inform the user that the agent is waiting for the wake word
         logger.info(f"Waiting for button press")
         self.activated = False
+        self._loop = asyncio.get_event_loop()
         led.wakeup()
 
     def stt_node(self, audio: AsyncIterable[str], model_settings: Optional[dict] = None) -> Optional[AsyncIterable[rtc.AudioFrame]]:
@@ -101,7 +103,10 @@ class AI_Guide(Agent):
         self.activated = not self.activated
         if self.activated:
             # Create a proper async task
-            asyncio.create_task(self.introduce())
+            if self._loop and not self._loop.is_closed():
+                self._loop.call_soon_threadsafe(
+                    lambda: asyncio.create_task(self.introduce())
+                )
             led.listen()
         else:
             led.wakeup()
