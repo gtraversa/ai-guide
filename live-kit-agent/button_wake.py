@@ -66,6 +66,7 @@ class AI_Guide(Agent):
     
     async def user_timeout(self):
         logger.info("User timed out, chat reset")
+        self.activated = False
         led.wakeup()
         await self.update_chat_ctx(ChatContext())
 
