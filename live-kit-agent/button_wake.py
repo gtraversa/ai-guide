@@ -64,6 +64,7 @@ class AI_Guide(Agent):
             result = await super().on_user_turn_completed(chat_ctx, new_message)
             return result
         # Otherwise, don't generate a reply
+        await self.update_chat_ctx(ChatContext())
         raise StopResponse()
     
     async def user_timeout(self):
@@ -84,20 +85,6 @@ class AI_Guide(Agent):
         led.wakeup()
         logger.info("Response completed, waiting button")
         await self.update_chat_ctx(ChatContext())
-
-    # def button_callback(self,channel):
-    #     self.activated = not self.activated
-    #     if self.activated:
-    #         async def introduce():
-    #             await self.session.generate_reply(
-    #                 instructions="Greet the user quickly",
-    #                 allow_interruptions=False
-    #             )
-    #         introduce()
-    #         led.listen()
-    #     else:
-    #         led.wakeup()
-    #     logger.info(f'Toggeled activation state, new state is: {str(self.activated)}')
 
     def button_callback(self, channel):
         self.activated = not self.activated
