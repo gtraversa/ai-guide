@@ -83,19 +83,39 @@ class AI_Guide(Agent):
         logger.info("Response completed, waiting button")
         await self.update_chat_ctx(ChatContext())
 
-    def button_callback(self,channel):
+    # def button_callback(self,channel):
+    #     self.activated = not self.activated
+    #     if self.activated:
+    #         async def introduce():
+    #             await self.session.generate_reply(
+    #                 instructions="Greet the user quickly",
+    #                 allow_interruptions=False
+    #             )
+    #         introduce()
+    #         led.listen()
+    #     else:
+    #         led.wakeup()
+    #     logger.info(f'Toggeled activation state, new state is: {str(self.activated)}')
+
+    def button_callback(self, channel):
         self.activated = not self.activated
         if self.activated:
-            async def introduce():
-                await self.session.generate_reply(
-                    instructions="Greet the user quickly",
-                    allow_interruptions=False
-                )
-            introduce()
+            # Create a proper async task
+            asyncio.create_task(self.introduce())
             led.listen()
         else:
             led.wakeup()
-        logger.info(f'Toggeled activation state, new state is: {str(self.activated)}')
+        logger.info(f'Toggled activation state, new state is: {str(self.activated)}')
+
+    async def introduce_user(self):
+        """Separate async method for introduction"""
+        try:
+            await self.session.generate_reply(
+                instructions="Greet the user quickly",
+                allow_interruptions=False
+            )
+        except Exception as e:
+            logger.error(f"Error during introduction: {e}")
         
 
     def setup_gpio(self):
@@ -155,4 +175,10 @@ async def entrypoint(ctx: agents.JobContext):
     
 
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint,
+                                initialize_process_timeout=60.0,  # Increase from default 10s
+                                shutdown_process_timeout=90.0,    # Increase from default 60s
+                                max_retry=3,                      # Reduce retries to fail faster
+                                job_memory_limit_mb=800,          # Set memory limit for Pi Zero 2
+                                job_memory_warn_mb=400,           # Warning at 400MB
+                                multiprocessing_context="spawn"))
