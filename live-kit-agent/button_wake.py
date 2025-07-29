@@ -57,9 +57,9 @@ class AI_Guide(Agent):
     async def on_user_turn_completed(self, chat_ctx, new_message=None):  
         # Only generate a reply if the wake word was detected  
         if self.activated:  
-            # Let the default behavior happen  
-            result = await super().on_user_turn_completed(chat_ctx, new_message)
+            # Let the default behavior happen 
             led.think()
+            result = await super().on_user_turn_completed(chat_ctx, new_message)
             return result
         # Otherwise, don't generate a reply
         raise StopResponse()
