@@ -12,7 +12,7 @@ from livekit.plugins import (
 )
 from livekit.agents.voice.agent_activity import StopResponse
 from livekit.agents.llm import ChatContext
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
+#from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 import RPi.GPIO as GPIO 
 
@@ -107,7 +107,7 @@ class AI_Guide(Agent):
             led.wakeup()
         logger.info(f'Toggled activation state, new state is: {str(self.activated)}')
 
-    async def introduce_user(self):
+    async def introduce(self):
         """Separate async method for introduction"""
         try:
             await self.session.generate_reply(
@@ -138,7 +138,7 @@ async def entrypoint(ctx: agents.JobContext):
             instructions="Speak in a friendly and conversational tone.",
             ),
         vad=silero.VAD.load(),
-        turn_detection=MultilingualModel(),
+        turn_detection='vad',
         user_away_timeout=15,
         allow_interruptions=False
     )
@@ -176,8 +176,8 @@ async def entrypoint(ctx: agents.JobContext):
 
 if __name__ == "__main__":
     cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint,
-                                initialize_process_timeout=60.0,  # Increase from default 10s
-                                shutdown_process_timeout=90.0,    # Increase from default 60s
+                                initialize_process_timeout=100.0,  # Increase from default 10s
+                                shutdown_process_timeout=100.0,    # Increase from default 60s
                                 max_retry=3,                      # Reduce retries to fail faster
                                 job_memory_limit_mb=800,          # Set memory limit for Pi Zero 2
                                 job_memory_warn_mb=400,           # Warning at 400MB
